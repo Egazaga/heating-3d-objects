@@ -1,17 +1,18 @@
+from collections import defaultdict
+
 import numpy as np
 
 
 def obj_to_graph(faces):
-    pairs = set()
+    graph = defaultdict(set)
     for f in faces:
-        pairs.add((f[0], f[1]))
-        pairs.add((f[0], f[2]))
-        pairs.add((f[1], f[0]))
-        pairs.add((f[1], f[2]))
-        pairs.add((f[2], f[0]))
-        pairs.add((f[2], f[1]))
-    pairs = list(pairs)
-    return np.array(pairs)
+        graph[f[0]].add(f[1])
+        graph[f[0]].add(f[2])
+        graph[f[1]].add(f[0])
+        graph[f[1]].add(f[1])
+        graph[f[2]].add(f[0])
+        graph[f[2]].add(f[1])
+    return graph
 
 
 def obj_file_to_mesh3d(path):

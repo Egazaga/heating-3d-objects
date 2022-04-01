@@ -13,19 +13,18 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 app.layout = html.Div([
     dcc.Graph(id='basic-interactions'),
-    html.Button('Bunny', id='btn1', n_clicks=0),
-    html.Button('Cow', id='btn2', n_clicks=0),
-    html.Button('Dragon', id='btn3', n_clicks=0),
-    dcc.Slider(id='slider', min=10, max=40, step=1, value=20),
+    html.Button('Cow', id='btn1', n_clicks=0),
+    html.Button('Bunny', id='btn2', n_clicks=0),
+    html.Button('Cat', id='btn3', n_clicks=0),
 ],
     style={'width': '50%'}
 )
 
-files = ["bunny.obj", "cow.obj", "dragon.obj"]
+files = ["cow.obj", "bunny.obj", "cat.obj"]
 objs = [obj_file_to_mesh3d("objs/" + f) for f in files]
 curr = 0
 graphs = [obj_to_graph(data[1]) for data in objs]
-heat_value = 20
+last_click = None
 
 
 @app.callback(
@@ -35,29 +34,31 @@ heat_value = 20
     Input('btn2', 'n_clicks'),
     Input('btn3', 'n_clicks'))
 def display_click_data(clickData, btn1, btn2, btn3):
+    global objs, curr, graphs, last_click
     print(clickData)
-    global objs, curr, graphs, heat_value
-    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    if 'btn1' in changed_id:
-        curr = 0
-        fig = mesh_to_figure(objs[curr], graphs[curr], heat_value, None)
-    elif 'btn2' in changed_id:
-        curr = 1
-        fig = mesh_to_figure(objs[curr], graphs[curr], heat_value, None)
-    elif 'btn3' in changed_id:
-        curr = 2
-        fig = mesh_to_figure(objs[curr], graphs[curr], heat_value, None)
-    else:
-        fig = mesh_to_figure(objs[curr], graphs[curr], heat_value, clickData)
+    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0].split(".")[0]
+
+    if 'btn1' in changed_id or 'btn2' in changed_id or 'btn3' in changed_id:  # button clicked
+        if 'btn1' in changed_id:
+            curr = 0
+        if 'btn2' in changed_id:
+            curr = 1
+        if 'btn3' in changed_id:
+            curr = 2
+        last_click = None
+        fig = mesh_to_figure(objs[curr], graphs[curr], None, None)
+    elif clickData is None:  # init
+        fig = mesh_to_figure(objs[curr], graphs[curr], None, None)
+    else:  # click on graph
+        if last_click is None:
+            fig = mesh_to_figure(objs[curr], graphs[curr], None, None)
+            last_click = clickData["points"][0]["pointNumber"]
+        else:
+            curr_click = clickData["points"][0]["pointNumber"]
+            fig = mesh_to_figure(objs[curr], graphs[curr], last_click, curr_click)
+            last_click = curr_click
+
     return fig
-
-
-@app.callback(Output('slider', 'value'),
-              [Input('slider', 'value')])
-def display_value(value):
-    global heat_value
-    heat_value = value
-    return value
 
 
 if __name__ == '__main__':
